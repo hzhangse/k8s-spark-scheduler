@@ -31,5 +31,6 @@ var (
 
 // Execute runs the application and returns the exit code.
 func Execute() int {
+	//rootCmd.SetArgs([]string{0: "server"})
 	return cobracli.ExecuteWithDefaultParams(rootCmd, cobracli.VersionFlagParam(Version))
 }
