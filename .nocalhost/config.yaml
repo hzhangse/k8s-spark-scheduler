@@ -1,0 +1,16 @@
+configProperties:
+  version: v2
+  envFile: env.dev
+
+application:
+  name: spark-scheduler
+  manifestType: rawManifestLocal
+  resourcePath: ["manifest/templates"]
+  ignoredPath: []
+  env: 
+    - name: DEBUG
+      value: ${DEBUG:-false}
+    - name: DOMAIN
+      value: ${DOMAIN:-coding.net}
+  services:
+    ${_INCLUDE_:-./base-services.yaml | nindent 4}

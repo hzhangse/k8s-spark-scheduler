@@ -1,0 +1,26 @@
+- name: spark-scheduler-extender
+  serviceType: deployment
+  containers:
+    - name: spark-scheduler-extender
+    - dev:
+        gitUrl: https://github.com/palantir/k8s-spark-scheduler.git
+        image: codingcorp-docker.pkg.coding.net/nocalhost/dev-images/golang:1.16
+        shell: sh
+        workDir: /home/nocalhost-dev
+        command:
+          run: [ "./run.sh" ]
+          debug: [ "./debug.sh" ]
+        debug:
+          remoteDebugPort: 9009
+        sync:
+          type: send
+          filePattern:
+            - ./
+          ignoreFilePattern:
+            - ".git"
+            - ".github"
+        portForward:
+          - 9009:9009     
+
+
+

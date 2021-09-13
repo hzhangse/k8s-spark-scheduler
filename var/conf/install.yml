@@ -1,0 +1,12 @@
+server:
+  port: 8483
+  management-port: 8484
+  context-path: /spark-scheduler
+fifo: true
+#use-console-log: true
+instance-group-label: "kubernetes.io/os"
+logging:
+  level: debug
+  output: STDOUT
+
+  
