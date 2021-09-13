@@ -37,6 +37,14 @@ func IsSparkSchedulerExecutorPod(obj interface{}) bool {
 	return false
 }
 
+// IsSparkSchedulerDriverPod returns whether the passed object is a spark application pod which has this scheduler in the scheduler spec and is an driver
+func IsSparkSchedulerDriverPod(obj interface{}) bool {
+	if role, isSparkSchedulerPod := getRoleIfSparkSchedulerPod(obj); isSparkSchedulerPod {
+		return role == common.Driver
+	}
+	return false
+}
+
 // GetPodFromObjectOrTombstone tries to cast the passed object to a Pod object, and if that's not possible tries to get the Pod object from the tombstone
 func GetPodFromObjectOrTombstone(obj interface{}) (*v1.Pod, bool) {
 	pod, ok := obj.(*v1.Pod)

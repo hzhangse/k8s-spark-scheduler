@@ -243,7 +243,8 @@ func unreservedSparkPodsBySparkID(
 	appIDToPods := make(map[string]*sparkPods)
 	for _, pod := range pods {
 		if isNotScheduledSparkPod(pod) || podsWithRRs[pod.Name] ||
-			(pod.Labels[common.SparkRoleLabel] == common.Executor && softReservationStore.ExecutorHasSoftReservation(ctx, pod)) {
+			(pod.Labels[common.SparkRoleLabel] == common.Executor && softReservationStore.ExecutorHasSoftReservation(ctx, pod)) ||
+			(pod.Labels[common.SparkRoleLabel] == common.Driver && pod.Status.Phase == v1.PodSucceeded) {
 			continue
 		}
 		appID := pod.Labels[common.SparkAppIDLabel]

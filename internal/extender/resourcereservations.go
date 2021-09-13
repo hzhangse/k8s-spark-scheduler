@@ -65,8 +65,9 @@ func NewResourceReservationManager(
 
 	informer.Informer().AddEventHandler(
 		clientcache.FilteringResourceEventHandler{
-			FilterFunc: utils.IsSparkSchedulerExecutorPod,
+			FilterFunc: utils.IsSparkSchedulerPod,
 			Handler: clientcache.ResourceEventHandlerFuncs{
+				UpdateFunc: rrm.onDriverPodSucceeded,
 				DeleteFunc: rrm.onExecutorPodDeletion,
 			},
 		},
@@ -408,17 +409,38 @@ func (rrm *ResourceReservationManager) getActivePods(ctx context.Context, appID 
 }
 
 func (rrm *ResourceReservationManager) onExecutorPodDeletion(obj interface{}) {
-	pod, ok := utils.GetPodFromObjectOrTombstone(obj)
-	if !ok {
-		svc1log.FromContext(rrm.context).Warn("failed to parse object as pod, skipping")
-		return
-	}
-
-	// Only keep executor pods which are for dynamic allocation applications and which have resource reservations to give back
-	if _, ok = rrm.softReservationStore.GetSoftReservation(pod.Labels[common.SparkAppIDLabel]); ok {
-		if !rrm.softReservationStore.ExecutorHasSoftReservation(rrm.context, pod) {
-			rrm.addPodForDynamicAllocationCompaction(pod)
+	if utils.IsSparkSchedulerExecutorPod(obj) {
+		pod, ok := utils.GetPodFromObjectOrTombstone(obj)
+		if !ok {
+			svc1log.FromContext(rrm.context).Warn("failed to parse object as pod, skipping")
+			return
 		}
+
+		// Only keep executor pods which are for dynamic allocation applications and which have resource reservations to give back
+		if _, ok = rrm.softReservationStore.GetSoftReservation(pod.Labels[common.SparkAppIDLabel]); ok {
+			if !rrm.softReservationStore.ExecutorHasSoftReservation(rrm.context, pod) {
+				rrm.addPodForDynamicAllocationCompaction(pod)
+			}
+		}
+	}
+}
+
+func (rrm *ResourceReservationManager) onDriverPodSucceeded(oldObj interface{}, newObj interface{}) {
+	if utils.IsSparkSchedulerDriverPod(newObj) {
+		pod, ok := utils.GetPodFromObjectOrTombstone(newObj)
+		if !ok {
+			svc1log.FromContext(rrm.context).Error("failed to parse object as pod", svc1log.UnsafeParam("obj", newObj))
+			return
+		}
+		if pod.Status.Phase == v1.PodSucceeded {
+			_, find := rrm.resourceReservations.Get(pod.GetNamespace(), pod.Labels[common.SparkAppIDLabel])
+			if find {
+				rrm.resourceReservations.Delete(pod.GetNamespace(), pod.Labels[common.SparkAppIDLabel])
+				rrm.resourceReservations.List()
+			}
+			return
+		}
+
 	}
 }
 
